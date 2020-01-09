@@ -4,7 +4,7 @@ import socket
 
 id = 'JotaroRecvMAC'
 # topic = '/tgr2020/jan08/data/#'
-topic = '#'
+topic = '/tgr2020/track/data/21'
 
 def on_connect(client, userdata, flags, rc):
     client.subscribe(topic)
