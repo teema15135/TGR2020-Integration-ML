@@ -4,9 +4,9 @@ from bleak import discover
 import paho.mqtt.client as mqtt
 import json
 
-topic = '/tgr2020/jan08/data/22'
+topic = '/tgr2020/track/data/21'
 
-async def scan(uuids, queue):
+async def scan(mac_addrs, queue):
     while True:
         print('Start scanning')
         tstart = loop.time()
@@ -14,7 +14,7 @@ async def scan(uuids, queue):
         print('Found %d devices'%(len(devices)))
         for dev in devices:
             dev_mac = str(dev).split(': ')[0]
-            if dev_mac in uuids:
+            if dev_mac in mac_addrs:
                 print(dev_mac, 'detected at', dev.rssi, 'dBm')
                 queue.put_nowait({'mac_addr':dev_mac, 'rssi':dev.rssi})
         telapsed = loop.time() - tstart
@@ -46,14 +46,15 @@ async def publish(queue):
     mqtt.loop_stop()
 
 if __name__ == '__main__':
+    
     # mac_addrs = ('80:E1:26:07:C8:FB', '80:E1:26:00:66:5F', '80:E1:26:00:62:97')
-    mac_addrs = ("80:E1:26:07:C8:FB", "80:E1:26:00:66:5F", "80:E1:26:00:62:97")
+    #               3                   18                      21                      36
+    mac_addrs = ('80:E1:26:07:C8:7B', '80:E1:26:07:CA:DC', '80:E1:26:07:E8:68', '80:E1:26:00:B4:29')
 
     # group         21                  
-    uuids = ('18861E73-EBEA-4B21-8747-144FD7588FF0', 
     loop = asyncio.get_event_loop()
     queue = asyncio.Queue()
-    loop.create_task(scan(uuids, queue))
+    loop.create_task(scan(mac_addrs, queue))
     loop.create_task(publish(queue))
     try:
         loop.run_forever()

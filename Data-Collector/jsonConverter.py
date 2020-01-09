@@ -17,4 +17,4 @@ with open('morning.json') as json_file:
     data = json.load(json_file)
 
 for key in data:
-    print(key)
+    data[key]
