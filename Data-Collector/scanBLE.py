@@ -9,8 +9,7 @@ async def scan():
         devices = await discover()
         print('Found %d devices'%(len(devices)))
         for dev in devices:
-            dev_mac = str(dev).split(': ')[0]
-            print(dev_mac, dev.rssi)
+            print(dev)
         telapsed = loop.time() - tstart
         print('Elapsed time: %.1f'%(telapsed))
         await asyncio.sleep(10 - telapsed)
