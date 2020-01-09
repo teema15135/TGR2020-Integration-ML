@@ -3,7 +3,9 @@ import time
 import socket
 
 id = 'JotaroRecv'
-topic = '/tgr2020/jan08/data/#'
+# topic = '/tgr2020/jan08/data/#'
+
+topic = '/tgr2020/track/data/#'
 
 def on_connect(client, userdata, flags, rc):
     client.subscribe(topic)

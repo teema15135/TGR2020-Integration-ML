@@ -2,7 +2,7 @@ import asyncio
 from time import sleep
 from bleak import discover
 
-async def scan():
+async def scan(mac_addrs):
     while True:
         print('Start scanning')
         tstart = loop.time()
@@ -10,6 +10,8 @@ async def scan():
         print('Found %d devices'%(len(devices)))
         for dev in devices:
             dev_mac = str(dev).split(': ')[0]
+            if dev_mac in mac_addrs:
+                print(dev_mac, 'detected at', dev.rssi, 'dBm')
             print(dev_mac, dev.rssi)
         telapsed = loop.time() - tstart
         print('Elapsed time: %.1f'%(telapsed))
