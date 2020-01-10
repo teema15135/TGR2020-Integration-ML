@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Team 21 See-It 2020</title>
+    <link rel="stylesheet" href="./css/normalize.css">
+    <script src="./js/tf.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            height: 100%;
+        }
+
+        .card {
+          /* Add shadows to create the "card" effect */
+          box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+          transition: 0.3s;
+          margin: 24pt;
+        }
+        
+        /* On mouse-over, add a deeper shadow */
+        .card:hover {
+          box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+        }
+        
+        /* Add some padding inside the card container */
+        .container {
+          padding: 2px 16px;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="map"></div>
+    <script defer>
+      let model;
+      let map;
+      let locations;
+
+      const markers = {};
+      let trackMarker = {};
+
+      var currentPosition = '21';
+
+      let isMapLoaded = false;
+      let isModelLoaded = false;
+      let isLocationLoad = false;
+
+      const trackingMap = {
+        '3' : [19.020580, 99.901238],  // Near team3
+        '18' : [19.154704, 99.904997],  // Near team18
+        '21' : [19.165063, 99.812259],  // Near team21
+        '36' : [19.171277, 99.887452]   // Near team36
+      }
+
+      // team 03 is 46
+      // team 18 is 44
+      // team 21 is 47
+      // team 36 is 45
+      const teamMap = ['3', '18', '21', '36'];
+
+      function testChangeLocation() {
+        setInterval(() => {
+          if (currentPosition == '3') currentPosition = '18';
+          else if (currentPosition == '18') currentPosition = '21';
+          else if (currentPosition == '21') currentPosition = '36';
+          else if (currentPosition == '36') currentPosition = '3';
+          const latLng = new google.maps.LatLng(trackingMap[currentPosition][0], trackingMap[currentPosition][1]);
+          trackMarker.setPosition(latLng);
+        }, 2500);
+      }
+
+      async function updateLocation() {
+        const res = await fetchRssi();
+        const data = await res.json();
+        const xs = [data[0].data.rssi, data[1].data.rssi, data[2].data.rssi, data[3].data.rssi];
+        const i = predictLocation(xs);
+        const position = trackingMap[teamMap[i]];
+        const latLng = new google.maps.LatLng(position[0], position[1]);
+        trackMarker.setPosition(latLng);
+      }
+
+      function maxIndexOf(arr) {
+        let index = -1;
+        let max = -1;
+        for (let i = 0; i < arr.length; i++) {
+          if (arr[i] > max) {
+            max = arr[i]
+            index = i
+          }
+        }
+        return index;
+      }
+
+      function predictLocation(xs) {
+        if (!isModelLoaded) {
+          console.log('Please load model first');
+          return;
+        }
+        let yv = model.predict(tf.tensor2d([xs]));
+        const maxIndex = maxIndexOf(yv.arraySync()[0]);
+        return maxIndex;
+      }
+
+      function fetchRssi() {
+        return fetch('http://202.139.192.121/api/track/dataset');
+      }
+
+      function pinMap() {
+        if (!isMapLoaded || !isLocationLoad) {
+          console.log("Please call loadMap() or loadPinLocation() first!");
+          return;
+        }
+        locations.forEach(location => {
+          var latLng = new google.maps.LatLng(location.lat, location.lng);
+          var marker = new google.maps.Marker({
+            position: latLng,
+            map: map,
+            title: location.name,
+            label: location.name
+          });
+          markers[location['id']] = marker;
+        });
+        const initialLatLng = new google.maps.LatLng(trackingMap['21'][0], trackingMap['21'][1]);
+        trackMarker = new google.maps.Marker({
+          position: initialLatLng,
+          map: map,
+          icon: './images/morty.png'
+        });
+      }
+
+      async function loadPinLocation() {
+        try {
+          const res = await fetch("./json/locations.json");
+          const data = await res.json()
+          locations = data;
+          isLocationLoad = true;
+        } catch (err) {
+          console.log(err);
+        }
+        return;
+      }
+
+      function loadMap() {
+        if (isMapLoaded) {
+          console.log("Map is already load.");
+          return;
+        }
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: {
+            lat: 19.119819,
+            lng: 99.871141
+          },
+          zoom: 12
+        });
+        isMapLoaded = true;
+      }
+
+      async function loadPredictModel() {
+        if (isModelLoaded) {
+          console.log("Model is already load.");
+          return;
+        }
+        model = await tf.loadLayersModel("./model/model.json");
+        isModelLoaded = true;
+        return;
+      }
+
+      async function run() {
+        await loadPinLocation();
+        loadMap();
+
+        await loadPredictModel();
+
+        pinMap();
+        // testChangeLocation();
+        setInterval(updateLocation, 5000);
+      }
+    </script>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDC8pqgfc43AdDI5KIul9JqBAVPk0OHI-M&callback=run"
+      async
+      defer
+    ></script>
+  </body>
+</html>
